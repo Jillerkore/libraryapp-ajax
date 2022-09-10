@@ -16,4 +16,13 @@ class Book extends Model
         'author'
     ];
 
+    public function scopeName($query, $name)
+    {
+        if (!is_null($name)) {
+            return $query->where('name', 'like', '%'.$name.'%');
+        }
+
+        return $query;
+    }
+
 }

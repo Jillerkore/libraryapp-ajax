@@ -15,107 +15,95 @@ class LibraryController extends Controller
      */
     public function index()
     {
-
-        $books = Book::latest()->paginate(100);
-
-        return view('index', compact('books'));
+        return view('books.index');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
+    public function books(Request $request)
     {
-        return view('create');
+        return response()->json(
+            [
+                'success' => 200, 
+                'data' => Book::where('name', 'LIKE', $request->q ? "%{$request->q}%" : '%%')
+                                ->get(['id','date','name','author'])
+            ], 
+            200
+        );
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
+    public function book(Request $request)
     {
 
+        $book = Book::where('id', $request->id)->first();
+
+        return response()->json(
+            [
+                'id'=> $book->id,
+                'date'=> $book->date,
+                'name'=> $book->name,
+                'author'=> $book->author
+            ], 
+            200
+        );
+    }
+    public function filter(Request $request)
+    {
+        return response()->json(
+            [
+                'success' => 200, 
+                'data' => Book::name($request->name)->get(['id', 'date', 'name', 'author'])
+            ], 
+            200
+        );
+    }
+
+    public function createBook(Request $request) {
         $validator = Validator::make($request->all(), [
             'date' => 'nullable|date',
             'name' => ['required', 'string', 'min:2'],
             'author' => ['required', 'string', 'min:2']
         ]);
-        // dd($request->all());
 
         if ($validator->fails()) {
-            return redirect()->route('books.create')->with('fail', 'Please recheck the entered fields i.e. date must be between 0-10,000 and title and author must not be empty.');
+            return response()->json(['status'=> 400, 'message'=> 'Validation Failure! Make sure all the fields are correct.'], 400);
         } else {
-            if ( !$request->date ) {
-                $request->merge(['date'=>date('Y-m-d')]);
+            if (!$request->date) {
+                $request->merge(['date' => date('Y-m-d')]);
             }
             Book::create($request->all());
-            return redirect()->route('books.index')->with('success', 'Book created successfully.');
+            return response()->json(['status'=> 200, 'message'=>'Book created successfully!'], 200);
         }
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Book  $book
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Book $book)
+    public function editBook(Request $request)
     {
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Book  $book
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Book $book)
-    {
-        return view('edit',compact('book'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Book  $book
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Book $book)
-    {
-
         $validator = Validator::make($request->all(), [
+            'id' => 'required',
             'date' => 'nullable|date',
             'name' => ['required', 'string', 'min:2'],
             'author' => ['required', 'string', 'min:2']
         ]);
 
         if ($validator->fails()) {
-            return redirect()->route('books.edit', compact('book'))->with('fail', 'Please recheck the entered fields i.e. date must be between 0-10,000 and title and author must not be empty.');
-        }else {
+            return response()->json(['status'=> 400, 'message'=> 'Validation Failure! Make sure all the fields are correct.'], 400);
+        } else {
 
-        $book->update($request->all());
+            $book = Book::where('id', $request->id)->first();
+            $book->update($request->all());
 
-        return redirect()->route('books.index')
-                        ->with('success','Book updated successfully');            
-        }                
+            return response()->json(['status'=> 200, 'message'=>'Book updated successfully!'], 200);
+
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Book  $book
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Book $book)
-    {
-        $book->delete();
-        return redirect()->route('books.index')
-                        ->with('success','Book deleted successfully');
+    public function removeBook(Request $request) {
+
+        $book = Book::where('id', $request->id)->first();
+        if ($book) {
+            $id = $book->id;
+            $book->delete();
+            return response()->json(['status'=> 200, 'message' => 'Book successfully deleted.'], 200);
+        } else {
+            return response()->json(['status'=> 400, 'message' => 'An error occurred while deleting the book.'], 400);
+        }
     }
 }

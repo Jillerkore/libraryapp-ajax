@@ -14,6 +14,10 @@ use App\Http\Controllers\LibraryController;
 |
 */
 
-//Route::get('/', [LibraryController::class, 'index']);
-Route::resource('books', LibraryController::class);
+Route::resource('library', LibraryController::class);
 
+Route::get(
+    '/{name?}', function($name = '') {
+        return view('welcome', ['name' => $name]);
+    }
+);
